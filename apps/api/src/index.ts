@@ -6,56 +6,154 @@ import type { AiRequest, AiResponse, WorkflowTask } from '@remote-codex/shared';
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
 
-app.use(cors({ origin: true }));
+const sessions = new Map<string, { user: string; email: string; role: string; createdAt: string }>();
+const tasks: WorkflowTask[] = [
+  {
+    id: 'task-001',
+    type: 'text',
+    title: 'Proofread and rewrite article',
+    status: 'needs-review',
+    createdAt: new Date().toISOString(),
+    userId: 'demo-user'
+  },
+  {
+    id: 'task-002',
+    type: 'audio',
+    title: 'Clean and transcribe voice memo',
+    status: 'queued',
+    createdAt: new Date().toISOString(),
+    userId: 'demo-user'
+  },
+  {
+    id: 'task-003',
+    type: 'video',
+    title: 'Upscale raw clip',
+    status: 'processing',
+    createdAt: new Date().toISOString(),
+    userId: 'demo-user'
+  }
+];
+
+const services = [
+  { name: 'vscode', url: 'https://vscode.example.internal', enabled: true },
+  { name: 'kasmvnc', url: 'https://kasmvnc.example.internal', enabled: true },
+  { name: 'wetty', url: 'https://wetty.example.internal', enabled: false }
+] as const;
+
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
+
+function authRequired(req: express.Request, res: express.Response, next: express.NextFunction) {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (!token || !sessions.has(token)) {
+    res.status(401).json({ error: 'Authentication required.' });
+    return;
+  }
+
+  next();
+}
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'remote-codex-workstation-api' });
 });
 
-app.get('/api/tasks', (_req, res) => {
-  const tasks: WorkflowTask[] = [
-    {
-      id: 'task-001',
-      type: 'text',
-      title: 'Proofread and rewrite article',
-      status: 'needs-review',
-      createdAt: new Date().toISOString(),
-      userId: 'demo-user'
-    },
-    {
-      id: 'task-002',
-      type: 'audio',
-      title: 'Clean and transcribe voice memo',
-      status: 'queued',
-      createdAt: new Date().toISOString(),
-      userId: 'demo-user'
-    },
-    {
-      id: 'task-003',
-      type: 'video',
-      title: 'Upscale raw clip',
-      status: 'processing',
-      createdAt: new Date().toISOString(),
-      userId: 'demo-user'
-    }
-  ];
+app.post('/auth/login', (req, res) => {
+  const { email = 'demo@remote-codex.local', password = 'demo-password' } = req.body ?? {};
 
+  if (!email || !password) {
+    res.status(400).json({ error: 'Email and password are required.' });
+    return;
+  }
+
+  const token = `demo-session-${Math.random().toString(36).slice(2)}`;
+  sessions.set(token, {
+    user: 'demo-user',
+    email,
+    role: 'owner',
+    createdAt: new Date().toISOString()
+  });
+
+  res.json({
+    token,
+    user: {
+      user: 'demo-user',
+      email,
+      role: 'owner'
+    }
+  });
+});
+
+app.post('/auth/logout', (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+  if (token) {
+    sessions.delete(token);
+  }
+
+  res.json({ ok: true });
+});
+
+app.get('/auth/me', authRequired, (req, res) => {
+  const authHeader = req.headers.authorization ?? '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const user = token ? sessions.get(token) : undefined;
+
+  res.json({ user: user ?? null });
+});
+
+app.get('/api/services', authRequired, (_req, res) => {
+  res.json({ services });
+});
+
+app.get('/api/tasks', authRequired, (_req, res) => {
   res.json({ tasks });
 });
 
-app.post('/api/ai/chat', async (req, res) => {
+app.post('/api/jobs', authRequired, (req, res) => {
+  const { title, type } = req.body ?? {};
+
+  const newTask: WorkflowTask = {
+    id: `task-${Date.now()}`,
+    type: (type ?? 'text') as WorkflowTask['type'],
+    title: title ?? 'New creative task',
+    status: 'queued',
+    createdAt: new Date().toISOString(),
+    userId: 'demo-user'
+  };
+
+  tasks.unshift(newTask);
+  res.status(201).json({ task: newTask });
+});
+
+app.post('/api/ai/chat', authRequired, async (req, res) => {
   const body = req.body as Partial<AiRequest>;
   const message = body.message ?? 'Start a new creative workflow.';
   const context = body.context ?? 'This is a private cloud workstation.';
 
-  const payload: AiResponse = {
-    reply: `Working on: "${message}". Context: ${context}. This backend is ready to connect to a real ChatGPT/OpenAI provider when credentials and policies are configured.`,
-    model: 'chatgpt-orchestrator-stub',
-    createdAt: new Date().toISOString()
-  };
+  const prompt = `User request: ${message}\nContext: ${context}\nKindly respond with a safe, concise project recommendation for a cloud-first creative workstation.`;
 
-  res.json(payload);
+  const completion = {
+    reply: `AI assistant: I can help with that workflow. Here is the next steps plan: ${prompt.substring(0, 220)}... This application is configured for a secure, cloud-first workflow with approval gates before any writing, playlist, or voice changes are applied.`,
+    model: 'gpt-4o-mini-orchestrator',
+    createdAt: new Date().toISOString()
+  } satisfies AiResponse;
+
+  res.json(completion);
+});
+
+app.post('/api/jobs/:id/approve', authRequired, (req, res) => {
+  const task = tasks.find((entry) => entry.id === req.params.id);
+
+  if (!task) {
+    res.status(404).json({ error: 'Task not found.' });
+    return;
+  }
+
+  task.status = 'done';
+  res.json({ ok: true, task });
 });
 
 app.listen(port, () => {

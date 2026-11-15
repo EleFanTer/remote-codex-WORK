@@ -1,44 +1,44 @@
 # Remote Codex Workstation
 
-A cloud-based creative workstation for writing, media, and code, designed for an iPhone-first experience.
+A cloud-first creative workstation designed to unify writing, media, AI production, and private remote tooling behind one secure iPhone-first interface.
 
-## What this repo contains
+## Project shape
 
-This repository now includes an initial product skeleton for a private cloud media + AI workstation. The goal is to make the app feel like one product while combining cloud services and private access tools behind the same login.
+- `apps/web` – iPhone-first product shell and dashboard
+- `apps/api` – Express API, sessions, workflow tasks, AI orchestration endpoints
+- `packages/shared` – shared types and project-level contracts
+- `docs/architecture.md` – architecture and integration notes
 
-## Included structure
+## Current status
 
-- `apps/web`: React + Vite iPhone-first web application shell
-- `apps/api`: TypeScript Express API to host workflows and AI orchestration
-- `packages/shared`: common types for tasks and AI orchestration
-- `.env.example`: cloud environment template
+This repository is now scaffolded with:
 
-## Quick start
+- dashboard UI shell
+- mock authentication flow
+- protected task endpoints
+- AI chat route stub
+- private service registry
+- workflow queue and approval actions
+
+## Next implementation steps
+
+1. Replace the stub AI route with a real OpenAI API adapter
+2. Add real session persistence and policy checks
+3. Add task/job storage and queue processing
+4. Add media upload and storage workflows
+5. Add private reverse-proxy routing for VS Code, KasmVNC, and Wetty
+6. Add explicit consent flows for library and playlist changes
+
+## Development
 
 ```bash
 npm install
 npm run dev
 ```
 
-The web dashboard will run on `http://localhost:5173` and the API on `http://localhost:4000`.
+The app runs locally with:
 
-## Product direction
+- Web UI: `http://localhost:5173`
+- API: `http://localhost:4000`
 
-This is the initial foundation for:
-
-- iPhone Safari-first interface
-- AI-assisted writing and proofreading
-- cloud media processing jobs
-- private remote VS Code / KasmVNC / Wetty access
-- secure ChatGPT/OpenAI integration through the backend
-- explicit approvals before playlist or library changes
-
-## Next major steps
-
-1. Add authentication and session handling
-2. Add real OpenAI API integration behind the backend
-3. Add media upload and job queueing
-4. Add private routing for VS Code, KasmVNC, and Wetty
-5. Add playlist/library consent workflows
-
-> This is intentionally a starter architecture, not a completed production app.
+> This is still a starter product foundation, not a final production implementation.
