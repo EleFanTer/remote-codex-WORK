@@ -316,3 +316,22 @@ GitHub-коннектор ChatGPT авторизован как `EleFanTer`. Н�
 - Newly visible repository: remote-codex-workstation2, private, default branch main, size 0. Git tree cannot be read because repository is empty (no commit/tree). No evidence that it is a second implementation or successor to remote-codex-workstation.
 - Existing 10 repository names, default branches and GitHub sizes matched the prior inventory snapshot. The account inventory table above should be amended to include remote-codex-workstation2 as an empty private repository.
 - This is a static GitHub account check; it does not reveal Codespaces, local files, or runtime deployments.
+
+
+## 20. Current Codex MCP configuration documentation (2026-11-16)
+
+- Current OpenAI MCP documentation: https://learn.chatgpt.com/docs/extend/mcp?surface=cli
+- Codex stores MCP configuration in ~/.codex/config.toml; trusted projects may use .codex/config.toml. The ChatGPT desktop app, Codex CLI and IDE extension share this configuration.
+- Supported transports include stdio and Streamable HTTP. CLI commands include codex mcp add, codex mcp list, codex mcp --help, codex mcp login, and codex mcp logout. In the TUI, /mcp shows active servers.
+- For stdio servers, config supports command, args, env, env_vars and cwd. For Streamable HTTP, config supports url, bearer_token_env_var, http_headers/env_http_headers, OAuth auth and helper-based headers.
+- Codex OAuth supports multiple flows, including Client ID Metadata Documents and Dynamic Client Registration where the authorization server/client flow is compatible. If a provider requires a pre-registered OAuth client, codex mcp add supports --oauth-client-id and --oauth-client-secret. Exact callback URL must be registered where applicable.
+- Therefore the previously observed error “Dynamic client registration not supported” from codex mcp login github does not prove that Codex has no general MCP OAuth support. It indicates a mismatch/unsupported registration flow for that particular GitHub MCP endpoint/client configuration; diagnose the server's advertised auth metadata before choosing another route.
+- The docs support per-server tool allow/deny lists and approval modes. For our security posture, default to minimal tool exposure and prompt approval for write-capable tools.
+- Current installed Codex CLI version in the Codespace is recorded as 0.169.0 from earlier user terminal output. This version's actual help output and config parsing must still be checked in the live Codespace before relying on every current documentation field.
+- No current Codex config.toml has been read in this audit. No MCP server has been confirmed active in the actual Codex runtime. Do not add servers until a read-only inventory command confirms existing state and avoids duplicate entries.
+
+### Candidate minimal MCP config after live inspection
+- Browser: choose one of Playwright MCP or Chrome DevTools MCP, not both initially.
+- Research: Firecrawl hosted MCP is optional and separate from browser control.
+- GitHub: use existing GitHub connector for ChatGPT tasks; Codex GitHub MCP is a separate integration and should only be added if there is a concrete need for Codex-side git hosting actions beyond git CLI.
+- Keep remote GUI (KasmVNC), terminal (WeTTY), and web app services private behind the same auth boundary; MCP should not be used as a substitute for network security.
