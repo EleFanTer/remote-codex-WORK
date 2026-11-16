@@ -276,3 +276,43 @@ GitHub-коннектор ChatGPT авторизован как `EleFanTer`. Н�
 - Full source/runtime review still needed for remote-codex-workstation; prior code audit findings remain current until rechecked.
 - No MCP server runtime in Codex/Codespaces has yet been proven by live process/config inspection. Repo-level .mcp.json findings are static configuration evidence only.
 - Next sequence: recheck GitHub repository inventory and branch heads; audit exact current remote-codex-workstation files and tests; then perform a focused upstream-doc check for Chrome DevTools MCP, Playwright MCP and Firecrawl MCP; finally collect one safe Codespace diagnostic for actual Codex MCP config and secret presence (boolean only).
+
+
+## 18. Upstream MCP documentation check (2026-11-16)
+
+### Playwright MCP
+- Official Playwright docs: https://playwright.dev/docs/getting-started-mcp
+- Official documented stdio configuration: command npx, args @playwright/mcp@latest. Prerequisites: Node.js 20+ and an MCP client.
+- Official docs also describe standalone HTTP mode with --port 8931 and endpoint /mcp. It uses heartbeat/ping behavior; proxy/client compatibility must be checked if used remotely.
+- The Playwright MCP server exposes browser automation via structured accessibility snapshots, not only screenshots. This is a better fit for general web UI interaction than the img2threejs project-specific screenshot adapter.
+- Current Codespace Node 24.22.2 meets the documented Node >=20 prerequisite, but browser binary/system dependencies and MCP client config remain unverified.
+- For our cloud workstation, stdio is the simplest fit when Codex itself launches the server in the same Codespace. A remote HTTP listener should not be exposed publicly without authentication/network protection.
+
+### Chrome DevTools MCP
+- Official upstream docs: https://github.com/ChromeDevTools/chrome-devtools-mcp and https://developer.chrome.com/docs/devtools/agents/get-started/configuration
+- The Repacks fork pins chrome-devtools-mcp@1.2.0 in its repository config. This is a repo-specific historical pin, not evidence that it is installed in our Codespace.
+- Current upstream docs support headless mode, isolated temporary browser profile, channel selection, viewport, and attaching to a running Chrome via browserUrl or wsEndpoint. The current package documentation also offers a slim mode for basic browser tasks.
+- Security-relevant upstream warning: the MCP config file and its parent directory should not be writable by the agent if it controls executablePath, chromeArg, allowedUrlPattern, blockedUrlPattern, or similar policy settings. Configuration integrity is part of the browser security boundary.
+- For our use case, isolated + headless is preferable to attaching to a persistent browser profile containing personal sessions. Persistent browser contexts should be considered sensitive credential stores.
+- Chrome DevTools MCP and Playwright MCP overlap. Do not install both by default: choose one after a small Codespace compatibility test and compare required capabilities. Chrome DevTools is especially relevant when Chrome-specific debugging/performance/screencast is needed; Playwright MCP is a straightforward general automation option.
+
+### Firecrawl MCP
+- Official upstream repository result: https://github.com/mcp/firecrawl/firecrawl-mcp-server
+- Official docs currently advertise hosted endpoint https://mcp.firecrawl.dev/v2/mcp. Keyless free tier permits rate-limited scrape, search and parse; crawl/map/agent require credentials.
+- Interactive account authorization endpoint is https://mcp.firecrawl.dev/v2/mcp-oauth. API-key mode uses the /v2/mcp endpoint and Authorization: Bearer header; never put the key in the URL.
+- Firecrawl docs explicitly distinguish OAuth access tokens from refresh tokens. For HTTP streamable transports the client sends a Bearer access token; stdio can use FIRECRAWL_OAUTH_TOKEN or FIRECRAWL_API_KEY.
+- This clarifies the previously recorded endpoint, but does not prove that Codex can complete the Firecrawl OAuth flow. The earlier Codex GitHub login error “Dynamic client registration not supported” means we should not assume OAuth setup will work in Codex without testing.
+- The user's existing Firecrawl connector inside ChatGPT is already a separate authenticated integration. It must not be confused with a Firecrawl MCP server configured in Codex.
+- Before adding Firecrawl to Codex, prefer testing the keyless read-only tools first or use a proper OAuth/API-key flow only after confirming Codex support. Never request or print key values.
+
+### Selection recommendation for the Codespace
+1. Candidate general browser automation: Playwright MCP, stdio, headless browser, same Codespace process boundary.
+2. Candidate Chrome-specific debugging alternative: Chrome DevTools MCP, headless + isolated.
+3. Firecrawl: hosted remote MCP for web research/scrape; separate from browser automation and existing ChatGPT connector.
+4. Do not configure all three blindly. First verify Codex CLI's supported MCP config format/commands for installed version 0.169.0, then add one browser server and verify its tools; Firecrawl can be a separate optional server.
+
+## 19. GitHub inventory recheck (2026-11-16)
+- A fresh list_repositories(owner=EleFanTer, page_size=100) returned 11 repositories, not the previous 10.
+- Newly visible repository: remote-codex-workstation2, private, default branch main, size 0. Git tree cannot be read because repository is empty (no commit/tree). No evidence that it is a second implementation or successor to remote-codex-workstation.
+- Existing 10 repository names, default branches and GitHub sizes matched the prior inventory snapshot. The account inventory table above should be amended to include remote-codex-workstation2 as an empty private repository.
+- This is a static GitHub account check; it does not reveal Codespaces, local files, or runtime deployments.
