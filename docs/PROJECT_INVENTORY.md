@@ -335,3 +335,15 @@ GitHub-коннектор ChatGPT авторизован как `EleFanTer`. Н�
 - Research: Firecrawl hosted MCP is optional and separate from browser control.
 - GitHub: use existing GitHub connector for ChatGPT tasks; Codex GitHub MCP is a separate integration and should only be added if there is a concrete need for Codex-side git hosting actions beyond git CLI.
 - Keep remote GUI (KasmVNC), terminal (WeTTY), and web app services private behind the same auth boundary; MCP should not be used as a substitute for network security.
+
+
+## 21. Live Codespace diagnostic: first terminal check (2026-11-16)
+
+User supplied terminal screenshot from Codespace workspace /workspaces/remote-codex-workstation, branch main. The diagnostic command produced:
+- `codex --version` → `bash: codex: command not found`.
+- `codex mcp list` → same command-not-found error.
+- Neither `~/.codex/config.toml` nor `.codex/config.toml` was reported as FOUND by the diagnostic loop; no repo-level or user-level Codex MCP config was observed at those paths in this shell.
+- `_GITHUB_PAT_TOKEN` boolean check → NOT FOUND in this shell environment.
+- This is a live observation for the current Codespace terminal only. It does not prove Codex is absent from every environment or that the GitHub Codespaces secret does not exist in account/repository settings; it may be unassigned to this Codespace or named differently.
+- Earlier historical note that Codex CLI 0.169.0 had been installed/logged in is not confirmed in the current shell. Treat current shell observation as authoritative for this session until installation/PATH is diagnosed.
+- Next safe step: inspect node/npm versions, npm global prefix/bin path, PATH presence, and search only likely Codex executable locations without printing secrets. Then decide whether to install Codex CLI into this Codespace. Separately verify Codespaces secret configuration in GitHub settings, ensuring repository access is enabled; do not ask user to paste token values.
