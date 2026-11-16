@@ -11,7 +11,8 @@ type Task = {
 type Service = {
   name: string;
   url: string;
-  enabled: boolean;
+  enabled?: boolean;
+  access?: string;
 };
 
 type Consent = {
@@ -38,7 +39,7 @@ export default function App() {
   const [consentNote, setConsentNote] = useState('I approve this cloud-side action after reviewing the result.');
 
   const enabledServices = useMemo(
-    () => services.filter((service) => service.enabled),
+    () => services.filter((service) => service.enabled ?? true),
     [services]
   );
 
@@ -58,7 +59,7 @@ export default function App() {
       .then((data) => setTasks(data.tasks ?? []))
       .catch(() => setTasks([]));
 
-    fetch(`${AU}/api/services`, {
+    fetch(`${AU}/api/services/private`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((response) => response.json())
@@ -257,7 +258,10 @@ export default function App() {
               enabledServices.map((service) => (
                 <li key={service.name}>
                   <span>{service.name}</span>
-                  <a href={service.url} target="_blank" rel="noreferrer">Open</a>
+                  <div className="service-meta">
+                    <small>{service.access ?? 'private'}</small>
+                    <a href={service.url} target="_blank" rel="noreferrer">Open</a>
+                  </div>
                 </li>
               ))
             )}
