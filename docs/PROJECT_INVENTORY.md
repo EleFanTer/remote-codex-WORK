@@ -371,3 +371,11 @@ User supplied second terminal screenshot from the active Codespace:
 - This supersedes the prior check showing `codex: command not found`; Codex is now executable in the active terminal.
 - The one-time device code was visible in the user-provided screenshot. Do not store or repeat it in this inventory. User was advised to enter it only on the official OpenAI device page and not share it.
 - Login completion is not yet confirmed. Next diagnostic after browser approval: `codex login status`, then `codex mcp list` and inspect MCP config headers. Do not add MCP servers until current state is confirmed.
+
+
+## 24. Codex authentication check: login still incomplete (2026-11-16)
+
+- User supplied a later Codespace terminal screenshot showing `codex login status` → `Not logged in`.
+- `codex mcp list` → `No MCP servers configured yet`. This confirms no Codex MCP servers are configured in the current Codex CLI profile at this point.
+- Previous `codex login --device-auth` invocation displayed a device code, but successful authorization was not completed/retained in the CLI session.
+- Next action: repeat device authorization, keep terminal process alive, finish at official OpenAI device URL, then re-run `codex login status`. Only proceed to MCP config after status reports Logged in.
