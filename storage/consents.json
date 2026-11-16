@@ -1,0 +1,26 @@
+[
+  {
+    "id": "task-001",
+    "type": "text",
+    "title": "Proofread and rewrite article",
+    "status": "needs-review",
+    "createdAt": "2026-11-16T17:35:48.000Z",
+    "userId": "demo-user"
+  },
+  {
+    "id": "task-002",
+    "type": "audio",
+    "title": "Clean and transcribe voice memo",
+    "status": "queued",
+    "createdAt": "2026-11-16T17:35:48.000Z",
+    "userId": "demo-user"
+  },
+  {
+    "id": "task-003",
+    "type": "video",
+    "title": "Upscale raw clip",
+    "status": "processing",
+    "createdAt": "2026-11-16T17:35:48.000Z",
+    "userId": "demo-user"
+  }
+]
