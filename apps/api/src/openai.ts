@@ -1,9 +1,31 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import multer from 'multer';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import type { AiRequest, AiResponse, WorkflowTask } from '@remote-codex/shared';
 import { generateAiReply } from './openai.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const uploadDir = path.join(__dirname, '..', '..', 'storage', 'uploads');
+const consentDir = path.join(__dirname, '..', '..', 'storage', 'consents');
+
+fs.mkdirSync(uploadDir, { recursive: true });
+fs.mkdirSync(consentDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadDir),
+  filename: (_req, file, cb) => {
+    const timestamp = Date.now();
+    const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '-');
+    cb(null, `${timestamp}-${safeName}`);
+  }
+});
+
+const upload = multer({ storage });
 const app = express();
 const port = Number(process.env.PORT ?? 4000);
 
@@ -35,6 +57,7 @@ const tasks: WorkflowTask[] = [
   }
 ];
 
+const consentRecords: Record<string, { id: string; type: 'voice' | 'playlist' | 'library' | 'media'; granted: boolean; timestamp: string; note: string }> = {};
 const services = [
   { name: 'vscode', url: 'https://vscode.example.internal', enabled: true },
   { name: 'kasmvnc', url: 'https://kasmvnc.example.internal', enabled: true },
@@ -42,7 +65,7 @@ const services = [
 ] as const;
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: '50mb' }));
+app.use(express.json({ limit: '100mb' }));
 
 function authRequired(req: express.Request, res: express.Response, next: express.NextFunction) {
   const authHeader = req.headers.authorization;
@@ -127,6 +150,53 @@ app.post('/api/jobs', authRequired, (req, res) => {
 
   tasks.unshift(newTask);
   res.status(201).json({ task: newTask });
+});
+
+app.post('/api/uploads', authRequired, upload.single('file'), (req, res) => {
+  const file = req.file;
+
+  if (!file) {
+    res.status(400).json({ error: 'File upload is required.' });
+    return;
+  }
+
+  res.json({
+    ok: true,
+    file: {
+      originalName: file.originalname,
+      filename: file.filename,
+      path: file.path,
+      size: file.size,
+      mimetype: file.mimetype
+    }
+  });
+});
+
+app.post('/api/consent', authRequired, (req, res) => {
+  const { type, granted, note } = req.body ?? {};
+
+  if (!type || !['voice', 'playlist', 'library', 'media'].includes(type)) {
+    res.status(400).json({ error: 'Consent type is required.' });
+    return;
+  }
+
+  const id = `consent-${Date.now()}`;
+  consentRecords[id] = {
+    id,
+    type,
+    granted: Boolean(granted),
+    timestamp: new Date().toISOString(),
+    note: note ?? 'User granted approval for the requested cloud action.'
+  };
+
+  const consentPath = path.join(consentDir, `${id}.json`);
+  fs.writeFileSync(consentPath, JSON.stringify(consentRecords[id], null, 2));
+
+  res.status(201).json({ consent: consentRecords[id] });
+});
+
+app.get('/api/consent', authRequired, (_req, res) => {
+  res.json({ consents: Object.values(consentRecords) });
 });
 
 app.post('/api/ai/chat', authRequired, async (req, res) => {
