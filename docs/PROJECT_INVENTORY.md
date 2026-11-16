@@ -84,3 +84,41 @@ GitHub-коннектор ChatGPT авторизован как `EleFanTer`. Н�
 - Отмечать у каждого компонента: назначение, где работает (ChatGPT / Codex / Codespaces / внешний VPS / iPhone), статус (проверен / настроен / запущен / не проверен / отключён), зависимости, секреты только по именам, следующие шаги.
 - Не смешивать: (a) инструменты ChatGPT connectors, (b) MCP servers в `.mcp.json`, (c) MCP servers в Codex config, (d) GitHub repositories, (e) работающие сервисы.
 - Не изменять существующие репозитории и не запускать/деплоить сервисы без согласования, если действие может повлиять на данные, безопасность или расходы.
+
+
+## 8. Подробный аудит remote-codex-workstation (исходники, 2026-11-16)
+
+### Структура
+- `apps/api`: Express API, TypeScript; зависимости express 4.21.1, cors, dotenv; dev через tsx watch; build через tsc.
+- `apps/web`: React 18 + Vite 5 + TypeScript; dev на 0.0.0.0:5173; прокси `/api` направлен на localhost:4000.
+- `packages/shared`: общие типы задач, AI request/response, remote services и утилиты.
+- `docs/architecture.md`: схема мобильного web/PWA → API/auth/session → OpenAI adapter, media queue, storage/DB, protected service router → VS Code/KasmVNC/Wetty. Это целевая архитектура, не свидетельство развернутых сервисов.
+
+### Реально прочитанные исходники и поведение
+- `apps/api/src/index.ts`: Express сервер; маршруты /health, /auth/login, /auth/logout, /auth/me, /api/services, /api/tasks, /api/jobs, /api/ai/chat, /api/jobs/:id/approve. Задачи и сессии хранятся в памяти процесса; демо-задачи создаются при старте. Логин принимает email/password, но пароль не проверяется; выдаётся случайный demo-session token. AI endpoint в этом файле пока возвращает шаблонный текст, а не вызывает OpenAI. Approve меняет статус задачи на done.
+- `apps/api/src/openai.ts`: содержимое неожиданно дублирует почти весь API server code из index.ts, включая login/tasks/services; это не ожидаемая реализация отдельного OpenAI adapter. Важно: import `./openai.js` в этом файле создаёт самоссылочную/циклическую структуру. Вероятная ошибка генерации/копирования, требует исправления до запуска.
+- `apps/web/src/App.tsx`: iPhone-friendly dashboard (React) с логином, чатом, созданием jobs, approve, отображением services. API URL жёстко задан как `http://localhost:4000`, token хранится в localStorage. Для реального удалённого iPhone-доступа это нерабочая production-конфигурация: localhost на iPhone будет означать сам iPhone, а не Codespace/server. Нужен относительный API URL или корректный публичный base URL под HTTPS.
+- `apps/web/src/App.tsx`: login отправляет фиксированный `demo-password`; это демо, не полноценная аутентификация. Services используют placeholder URLs `*.example.internal`.
+- `packages/shared/src/index.ts`: экспортирует типы TaskType, WorkflowTask, AiRequest, AiResponse, RemoteService. Одновременно импортирует Node `http` и `net` в shared package ради getHostPort; это может быть несовместимо с browser bundle, если модуль подключён фронтендом.
+- `.gitignore`: исключает .env и .env.*, но разрешает .env.example.
+- `docs/architecture.md`: требует private service access, approval gates, server-side AI mediation, no direct public access to VNC/terminal. Эти принципы пока не реализованы в текущем коде.
+
+### Критические замечания безопасности/готовности (аудит кода, не penetration test)
+1. API login сейчас демо-режим: пароль фактически не проверяется, пользователь может получить сессию, прислав любые непустые email/password. Не публиковать сервис в интернете.
+2. Сессии хранятся в памяти и пропадают при перезапуске; нет срока действия, refresh/revocation model beyond in-memory logout, secure cookie flow или durable identity store.
+3. CORS настроен как `origin: true, credentials: true`, то есть разрешает отражать origin. Для production нужен строгий allowlist.
+4. Нет rate limiting, brute-force protection, CSRF strategy (если credentials/cookies будут применяться), schema validation и role-based authorization.
+5. `express.json({ limit: '50mb' })` без upload pipeline/streaming; лимит большой.
+6. AI response и service URLs в коде частично демо/placeholder. `openai.ts` не является корректным adapter в текущем виде.
+7. Web UI жёстко обращается к `http://localhost:4000`; это не годится для удалённого доступа с iPhone через Codespaces.
+8. Текущие задачи хранятся в памяти, нет DB, очереди, файлового storage, persistence, media worker или реального job lifecycle.
+9. `/api/jobs/:id/approve` только меняет статус на done, не запускает внешнее действие и не проверяет ownership конкретной задачи пользователя.
+10. Не обнаружено готовой интеграции с Codex CLI, GitHub MCP, Firecrawl MCP или Playwright MCP внутри API/Web app.
+
+**Статус проекта:** каркас/прототип, не production-ready, не подтверждён как развёрнутый. Не подключать публичный URL и не помещать реальные секреты, пока не закрыты пункты выше.
+
+## 9. Точная граница того, что проверено
+- GitHub account list, репозитории, видимость, ветки, размеры, несколько README/package/config/source files — проверены через GitHub connector.
+- Firecrawl current credit balance и monitors — проверены живым запросом.
+- Инструментальные namespaces текущего ChatGPT runtime — перечислены; это не экспорт всех личных MCP настроек GitHub/Codex.
+- Полный список MCP-серверов, установленных пользователем в аккаунте GitHub, GitHub Marketplace, ChatGPT Settings, Codex config или других приложениях, не может быть автоматически выведен только из GitHub repo list и доступных коннекторов. Для полного подтверждения нужно отдельно прочитать соответствующие настройки/конфиги. Никакие secrets values не требуются.
