@@ -1,0 +1,8 @@
+# Firecrawl hosted MCP (keyless tier; rate-limited)
+# This is project-scoped and applies only when Codex trusts this repository.
+[mcp_servers.firecrawl]
+url = "https://mcp.firecrawl.dev/v2/mcp"
+enabled = true
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+default_tools_approval_mode = "prompt"
