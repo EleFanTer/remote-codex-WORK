@@ -394,3 +394,15 @@ User supplied terminal screenshot from a separate Codespace:
 - Current crispy-space-bassoon is on branch FireCrawl, so it must not be assumed to be the canonical main workstation environment.
 - No Codespaces management/list API action is currently available through the connected GitHub tool set; account-level Codespaces inventory has not been verified.
 - Next decision: select one canonical Codespace for remote-codex-workstation, preferably the intended main development environment. Do not install Codex or MCPs in additional Codespaces until this is settled. Preserve branch-specific work; do not delete or recreate Codespaces without explicit approval.
+
+
+## 26. Crispy Codespace Git working-tree inspection (2026-11-16)
+
+User supplied terminal screenshot from `crispy-space-bassoon-rxgpvq446gg3w79v`, workspace `/workspaces/remote-codex-workstation`:
+- `git branch --show-current` → `FireCrawl`.
+- `git status --short` printed no entries: working tree clean.
+- `git log -5 --oneline` showed only one commit: `444faa2 (HEAD -> FireCrawl, origin/main, origin/HEAD, origin/FireCrawl) Initial commit`.
+- Therefore local HEAD, remote-tracking `origin/main`, `origin/HEAD` and `origin/FireCrawl` all point to the same initial commit. There is no visible branch-specific commit history or divergence between FireCrawl and main in this clone.
+- `ls -la` output visibly shows `.git` and `LICENSE`; the screenshot is vertically clipped and does not conclusively show the entire directory listing, so do not conclude that no other project files exist without a fresh `find`/`ls` output.
+- This Codespace's repo clone appears clean and at the common initial commit. It is not evidence of additional FireCrawl implementation work.
+- Next safe action: inspect exact tracked file list and compare local commit/tree with GitHub main; then choose this as canonical only if user confirms or no other Codespace has unique work. No checkout, reset, deletion or installation yet.
