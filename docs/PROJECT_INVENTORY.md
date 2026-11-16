@@ -379,3 +379,18 @@ User supplied second terminal screenshot from the active Codespace:
 - `codex mcp list` → `No MCP servers configured yet`. This confirms no Codex MCP servers are configured in the current Codex CLI profile at this point.
 - Previous `codex login --device-auth` invocation displayed a device code, but successful authorization was not completed/retained in the CLI session.
 - Next action: repeat device authorization, keep terminal process alive, finish at official OpenAI device URL, then re-run `codex login status`. Only proceed to MCP config after status reports Logged in.
+
+
+## 25. Second live Codespace confirmed: crispy-space-bassoon (2026-11-16)
+
+User supplied terminal screenshot from a separate Codespace:
+- Workspace path: /workspaces/remote-codex-workstation.
+- Codespace name: crispy-space-bassoon-rxgpvq446gg3w79v.
+- Git branch shown by shell prompt/status bar: FireCrawl (not main).
+- codex --version, codex login status and codex mcp list all fail with bash: codex: command not found.
+- _GITHUB_PAT_TOKEN boolean check: NOT FOUND.
+- This is a different Codespace from the earlier super-duper-xylophone session where Codex v0.169.0 was launched and device login was attempted. Another screenshot briefly showed a third name beginning automati...; exact name not captured.
+- The same repository can be mounted in multiple independent Codespaces; packages, shell environment, credentials and runtime state are per Codespace and do not automatically transfer.
+- Current crispy-space-bassoon is on branch FireCrawl, so it must not be assumed to be the canonical main workstation environment.
+- No Codespaces management/list API action is currently available through the connected GitHub tool set; account-level Codespaces inventory has not been verified.
+- Next decision: select one canonical Codespace for remote-codex-workstation, preferably the intended main development environment. Do not install Codex or MCPs in additional Codespaces until this is settled. Preserve branch-specific work; do not delete or recreate Codespaces without explicit approval.
