@@ -166,3 +166,91 @@ GitHub-коннектор ChatGPT авторизован как `EleFanTer`. Н�
 2. Встроенный browserView в VS Code fork — отдельная нативная Electron browser/agent capability, не MCP server; она Desktop-only.
 3. MCP support в Copilot source code не равен подключённому MCP в Codex CLI.
 4. Следующий технический приоритет: изучить `img2threejs` skill и его Playwright capture pipeline; затем проверить все ветки/файлы конфигурации в остальных репозиториях и live Codex MCP config из самого Codespace.
+
+
+## 12. Глубокий аудит img2threejs (2026-11-16)
+
+### Назначение и архитектура
+- README определяет проект как реконструкцию объекта/персонажа из reference image в code-only procedural Three.js model. Это не photogrammetry, не извлечение готовой сетки и не загрузка готовых art packs.
+- Skill version: 2.0.1; npm package version: 0.2.0. Это разные версии: npm package описывает installer/updater, а версия самого skill берётся из frontmatter SKILL.md.
+- package.json: Node >=18, CLI img2threejs ведёт на bin/img2threejs.mjs. Пакет публикует только CLI файл; основной skill и Python pipeline устанавливаются из Git checkout/release, а не поставляются как содержимое npm package.
+- Skill заявляет совместимость с Hermes, Claude Code, Codex и OpenCode. Installer создаёт общий release checkout и symlink для обнаруженных host integrations. Для Hermes отдельно требуется profile-level link.
+- Core pipeline использует Python 3.10+ stdlib. forge/requirements.txt и optional adapters нужно рассматривать отдельно от core.
+- Каждый reconstruction run обязан использовать локальный .img2threejs/state.json, forge/next.py и forge/state.py. State gate отслеживает шаги, evidence и ограниченные correction loops; hard-stop нельзя обходить по памяти/контексту.
+- Pipeline staged: intake → domain/quality assessment → spec → strict validation → locked build passes → browser review/capture → correction/acceptance. Один снимок не позволяет достоверно восстановить скрытые стороны; skill требует явно отмечать неопределённость и запрашивать дополнительные виды при необходимости.
+- В дереве присутствуют substantial forge stages для intake, geometry, materials, review, rigging/animation, а также extensive tests. Это серьёзная специализированная 3D reconstruction toolchain, а не универсальная browser workstation.
+
+### Playwright / browser capture: что реально делает
+- scripts/capture_threejs_playwright.py — optional Playwright adapter для Python↔Three.js render bridge.
+- Он импортирует Playwright динамически; при отсутствии пакета завершает работу с понятной ошибкой и предлагает установить Playwright в isolated environment либо использовать существующий Chrome DevTools MCP adapter.
+- Target page должна выставить window.__IMG2THREEJS_READY__ = true и window.__IMG2THREEJS_CAPTURE__.setCamera(cameraSpec). Для GLB-mediated-v2 нужен также capturePass({passId, mode}); для reference mode требуется setReferenceMode.
+- Скрипт запускает Chromium, открывает manifest runtime URL, ждёт readiness signal, устанавливает camera, ждёт animation frames, проверяет canvas, снимает screenshot и записывает capture/evidence в manifest. Сохраняет browser metadata и console/page errors; ненулевой код при ошибках.
+- Следовательно, это не MCP server и не standalone browser UI. Это проектный adapter, которому нужны уже существующая web page/Three.js runtime и render manifest.
+- grimoire/feedback/render_capture.md предписывает сначала использовать agent browser/screenshot tool (включая Browser MCP или in-app preview). Не устанавливать Playwright/Chromium только ради skill, если пользователь явно не разрешил или проект уже не зависит от них. Если in-app Browser отсутствует, запросить screenshot либо использовать browser tooling, уже имеющийся в целевом проекте.
+- Документация требует deterministic camera/framing, screenshot per pass, comparison sheet и human/agent vision review. Автоматические pixel metrics могут диагностировать, но не должны сами утверждать визуальную приёмку.
+- Дополнительный integrations/glb_character_pipeline/node/capture-character.mjs использует CloakBrowser, а затем локальный Playwright как fallback; он заточен под capture конкретного character demo, не универсальный browser server.
+- В репозитории не найден явный .mcp.json или отдельный MCP server entrypoint по полному recursive tree. Упоминания Chrome DevTools MCP в skill/docs обозначают совместимый внешний инструмент, а не MCP, поставляемый самим img2threejs.
+
+### Практическая ценность для нашей станции
+- Высокая ценность как отдельный agent skill для 3D реконструкции и как пример качественно gated workflow с локальным state/evidence.
+- Низкая прямая ценность для общей задачи iPhone → Codespaces → Codex control plane: это не удалённый desktop, не терминал и не универсальный браузер.
+- Playwright capture script можно повторно использовать как архитектурный пример: headless browser + runtime readiness contract + deterministic capture + evidence manifest. Но подключать его в рабочую станцию следует только если появится конкретная задача Three.js/3D и подтверждённая среда исполнения.
+- Статус установки skill в текущем Codespace/Codex не проверен. GitHub repo наличие не означает, что CLI/skill установлен в Codespace.
+
+## 13. Дополнительные MCP-конфигурации и skills в остальных репозиториях (2026-11-16)
+
+### EleFanTer/ios (Bitwarden iOS source fork)
+- Полное recursive tree просмотрено: 4,861 файлов.
+- Найден .mcp.json, объявляющий stdio server mobilebuildmcp: npx -y mobilebuildmcp@2.7.1 mcp; Sentry отключён через env flag.
+- .mobilebuildmcp/config.yaml включает workflows simulator и ui-automation, defaults: Bitwarden.xcworkspace, scheme Bitwarden, simulator iPhone 17 Pro.
+- .claude/skills/mobilebuildmcp/SKILL.md требует перед первым build/run/test вызвать session_show_defaults, использовать snapshot_ui перед UI interactions, проверять раскладку клавиатуры перед вводом символов, проверять фактический текст после ввода и никогда не вводить реальные vault credentials/TOTP URIs.
+- Назначение: Xcode/iOS simulator/device/macOS build/debug/logging/UI automation через MobileBuildMCP. Это developer toolchain для Bitwarden iOS на macOS с Xcode, не удалённое управление нашим Codespace и не iPhone-side MCP.
+- Наличие .mcp.json в fork не означает, что MobileBuildMCP установлен или доступен в текущем Codespace. Для его реальной работы необходимы совместимые macOS/Xcode host и соответствующие workflows.
+
+### EleFanTer/Repacks (Bitwarden Clients monorepo fork)
+- Полное recursive tree просмотрено: 10,309 файлов (в пределах доступной GitHub tree выдачи).
+- Найден .mcp.json с тремя stdio Chrome DevTools MCP configurations:
+  1. electron-devtools-attach: chrome-devtools-mcp@1.2.0, attach к http://localhost:9222, experimental screencast.
+  2. chrome-devtools-attach: attach к Chrome на http://localhost:9200, experimental screencast и categoryExtensions.
+  3. chrome-devtools-headless: отдельный headless isolated Chrome, experimental screencast и categoryExtensions.
+- Это конфиги для browser debugging/automation в контексте разработки Bitwarden Clients. Они не подтверждают, что соответствующие браузеры слушают порты 9222/9200 или что MCP процессы запущены.
+- В Repacks есть .devcontainer/browser-gui/devcontainer.json, browser app source (apps/browser) и workflow для browser build/tests. Это дополнительные browser-development assets, но не готовая публичная браузерная станция.
+- .claude/CLAUDE.md содержит security rules Bitwarden: не отправлять незашифрованные vault data в API, не логировать decrypted data/keys/PII, не коммитить credentials/secrets. Эти ограничения важны при любых экспериментах с fork.
+
+### EleFanTer/wetty
+- Полное recursive tree просмотрено: 164 файлов. Явные .mcp.json, mcp.json, mcp.yaml, mcp.yml, Codex config и agent skill files по именам не найдены.
+- package.json: WeTTY 3.0.0, Node engine ^22.23.4 || ^24.22.1 || >=26.12.1; Express 5, node-pty, xterm.js, Socket.IO. Это самостоятельный browser terminal server.
+- MCP server в репозитории не обнаружен. Терминал доступен через HTTP(S), но для нашей станции потребуются отдельные auth, origin allowlist, HTTPS и network boundary.
+
+### EleFanTer/YTubeMusicAPI
+- README подтверждает private FastAPI service на ytmusicapi: public /health, защищённые X-API-Key endpoints /search, /playlists, /playlists/add.
+- README требует OAuth JSON, OAuth client ID/secret и app API key хранить только в hosting provider secrets. Утверждается, что сервис не хранит music files; free host может засыпать.
+- MCP config по дереву (4 файла) не обнаружен. Сервис пока не подтверждён как deployed/working; README предполагает Render deployment.
+- Потенциально полезен как backend integration для музыкального workflow, но это не MCP server и не компонент удалённого управления рабочей станцией.
+
+### Пустые репозитории
+- My-yt-music-API и congenial-invention: Git tree API вернул 409 Git Repository is empty. Это подтверждает отсутствие commit/tree на проверенной default branch, а не наличие скрытого runtime.
+
+## 14. Сводка MCP evidence по проверенным репозиториям
+
+| Репозиторий | Обнаружено в репозитории | Тип / назначение | Runtime подтверждён? |
+|---|---|---|---|
+| vscode | component-explorer | stdio MCP, локальные component fixtures | Нет |
+| ios | mobilebuildmcp | stdio MCP, Xcode/iOS Simulator automation | Нет; требует macOS/Xcode |
+| Repacks | 2 attach + 1 headless Chrome DevTools MCP | browser debugging/automation | Нет |
+| img2threejs | явного MCP config/server нет; поддерживает внешний Browser/Chrome DevTools MCP | agent skill + CLI + optional Playwright capture adapter | Нет |
+| wetty | MCP config не найден | browser terminal, не MCP | Нет |
+| KasmVNC | MCP config не найден в полном tree search по именам | browser remote desktop, не MCP | Нет |
+| YTubeMusicAPI | MCP config не найден | FastAPI backend, не MCP | Не подтверждён |
+| My-yt-music-API | пустой | отсутствует код | Нет |
+| congenial-invention | пустой | отсутствует код | Нет |
+
+**Важное разграничение:** найденные .mcp.json являются repo-level developer configurations в форках VS Code/Bitwarden. Они не доказывают, что MCP servers установлены в текущем Codex CLI или работают в Codespaces.
+
+## 15. Следующий этап аудита
+1. Проверить полные конфигурации Repacks/.mcp.json и ios/.mcp.json как reference patterns; оценить актуальность версий и возможность изолированного использования Chrome DevTools MCP в Codespaces.
+2. Проверить KasmVNC tree/config/docs на deployment manifests, auth/TLS defaults, reverse proxy, Docker Compose, port exposure и release packaging; не запускать сервис.
+3. Сверить GitHub repo list и все 10 репозиториев повторно, чтобы выявить изменения с прошлого снимка.
+4. Вернуться к remote-codex-workstation: проверить полные исходники, исправность документации и определить минимальный безопасный vertical slice.
+5. Live Codex MCP config и доступность _GITHUB_PAT_TOKEN можно проверить только из Codespace runtime; значения секретов не выводить. Подготовить пользователю одну короткую диагностическую команду, когда дойдём до этого этапа.
+6. После repository audit перейти к официальным upstream docs для Chrome DevTools MCP / Playwright MCP / Firecrawl MCP и сопоставить актуальные способы установки, transport и auth.
