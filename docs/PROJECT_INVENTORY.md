@@ -254,3 +254,25 @@ GitHub-коннектор ChatGPT авторизован как `EleFanTer`. Н�
 4. Вернуться к remote-codex-workstation: проверить полные исходники, исправность документации и определить минимальный безопасный vertical slice.
 5. Live Codex MCP config и доступность _GITHUB_PAT_TOKEN можно проверить только из Codespace runtime; значения секретов не выводить. Подготовить пользователю одну короткую диагностическую команду, когда дойдём до этого этапа.
 6. После repository audit перейти к официальным upstream docs для Chrome DevTools MCP / Playwright MCP / Firecrawl MCP и сопоставить актуальные способы установки, transport и auth.
+
+
+## 16. KasmVNC deployment/security configuration audit (2026-11-16)
+
+- Full recursive tree on master reviewed: 814 files. No obvious Docker Compose stack, Kubernetes/Helm deployment, or repo-level MCP configuration was found by filename search. The repository contains Docker build/test images and packaging workflows, not a ready-to-run personal workstation deployment.
+- README explicitly says not to use master README as release documentation; use documentation matching the selected release. It describes KasmVNC as browser-only remote desktop/application access, with YAML server/user configuration.
+- Default server config listens on network interface 0.0.0.0, protocol http, automatic websocket port, IPv4 and IPv6 enabled. SSL settings require SSL but point to snakeoil self-signed certificate/key by default. This is not production TLS identity; replace with correctly managed certificates or terminate TLS at a trusted reverse proxy.
+- Server config uses kasm_password_file at ${HOME}/.kasmpasswd. README shows vncpasswd user creation and permissions. Brute-force protection defaults blacklist threshold 5 and timeout 10 (units/semantics must be checked in release-specific docs before tuning).
+- Default idle timeout and auto-shutdown timeouts are never. A workstation session can remain alive indefinitely unless external lifecycle controls are configured. This matters for resource/cost exposure.
+- Clipboard server-to-client and client-to-server are enabled by default, size unlimited; keyboard rate limit unlimited. The defaults config warns that verbose data-loss-prevention logging records private information such as keypresses and clipboard content. Avoid verbose logging and set clipboard/rate limits according to the threat model.
+- Default config allows client override of selected runtime settings. Decide whether clients should be able to alter settings before exposing the service.
+- builder/conf/nginx_kasm.conf is an example reverse proxy on port 8443 with a snakeoil certificate. It proxies UI to 127.0.0.1:5173 and Kasm API/WebSocket to 127.0.0.1:6901; websocket upgrade headers and long timeouts are configured. This is a build/test example, not proof of an externally hardened deployment.
+- builder/README.md test package creates three demo users (foo, foo-ro, foo-owner) with the default password foobar. These are explicitly test credentials. Never use this test container setup as a live public workstation without replacing all defaults and reviewing auth/network controls.
+- The project has a Web API and multi-user permissions per README, but the repo audit did not verify a deployed API or a production authorization design for our use case.
+- KasmVNC remains a plausible remote desktop backend for a Linux GUI, but it is heavier and more operationally complex than a browser terminal. It requires a Linux desktop/X server, KasmVNC runtime, secure TLS/auth, network perimeter, and lifecycle management. Current Codespace is 2 CPU / 8GB; suitability and idle cost must be tested before adoption.
+- Status: source audited, not built, not installed, not deployed, no runtime endpoint confirmed. Do not expose ports publicly until hardening and release-specific docs are reviewed.
+
+## 17. Current repository audit checkpoint
+- Deep review completed: img2threejs, vscode, ios, Repacks, wetty, KasmVNC, YTubeMusicAPI, and empty private repositories.
+- Full source/runtime review still needed for remote-codex-workstation; prior code audit findings remain current until rechecked.
+- No MCP server runtime in Codex/Codespaces has yet been proven by live process/config inspection. Repo-level .mcp.json findings are static configuration evidence only.
+- Next sequence: recheck GitHub repository inventory and branch heads; audit exact current remote-codex-workstation files and tests; then perform a focused upstream-doc check for Chrome DevTools MCP, Playwright MCP and Firecrawl MCP; finally collect one safe Codespace diagnostic for actual Codex MCP config and secret presence (boolean only).
