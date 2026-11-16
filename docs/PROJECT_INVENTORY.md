@@ -122,3 +122,47 @@ GitHub-коннектор ChatGPT авторизован как `EleFanTer`. Н�
 - Firecrawl current credit balance и monitors — проверены живым запросом.
 - Инструментальные namespaces текущего ChatGPT runtime — перечислены; это не экспорт всех личных MCP настроек GitHub/Codex.
 - Полный список MCP-серверов, установленных пользователем в аккаунте GitHub, GitHub Marketplace, ChatGPT Settings, Codex config или других приложениях, не может быть автоматически выведен только из GitHub repo list и доступных коннекторов. Для полного подтверждения нужно отдельно прочитать соответствующие настройки/конфиги. Никакие secrets values не требуются.
+
+
+## 10. Дополнительный аудит EleFanTer/vscode (2026-11-16)
+
+### MCP-конфигурации в репозитории
+- Поиск по полному Git tree ветки `main` (26,065 entries, tree не truncated) нашёл один явный корневой файл конфигурации MCP: `.mcp.json`.
+- В `.mcp.json` объявлен один stdio сервер `component-explorer`.
+  - command: `npm`
+  - args: `exec --no -- component-explorer mcp -p ./test/componentFixtures/component-explorer.json --use-daemon -vv`
+  - Это локальный инструмент для component explorer/fixtures, а не универсальный GitHub/Firecrawl/browser server.
+  - Конфигурация хранится в репозитории, но фактический запуск в текущем Codespace не проверен.
+- Других явных файлов `.mcp.json`, `mcp.json`, `mcp.yaml`, `mcp.yml`, `codex.toml`, `config.toml` в полном дереве `vscode` не найдено по поиску имён. Это не исключает конфигурации, задаваемые UI/user settings, переменными окружения или иными форматами.
+
+### Integrated Browser в EleFanTer/vscode
+- Найден skill `.github/skills/integrated-browser/SKILL.md`; это подробная архитектурная инструкция к встроенному браузеру VS Code (`browserView`).
+- Это не отдельный MCP сервер и не расширение BrowserMCP. Это нативная функция VS Code, построенная на Electron `WebContentsView` и Chromium.
+- Архитектура трёх процессов:
+  - Main: владеет WebContentsView, browser sessions, trust, permissions, history, CDP, screenshots.
+  - Shared: Playwright и remote/group automation services.
+  - Renderer: editor pane/UI, agent tools, лёгкие proxies, общается через IPC.
+- Страницы управляются агентами через Playwright/CDP и встроенные browser tools. Контент закрыт для агентов по умолчанию: требуется sharing/privacy gate; доступность полного набора инструментов зависит от chat/agent/settings gates. URL фильтруются network filter; контент рассматривается как untrusted input (prompt injection).
+- Browser sessions управляют cookies/cache/storage, разрешениями и trust; groups ограничивают, какие вкладки видит отдельный automation client; CDP проксируется, а не отдаётся как raw connection.
+- Skill явно говорит: Desktop-only, в web эта реализация не работает.
+- Практический вывод: этот встроенный браузер может быть интересен для управления браузером внутри desktop VS Code, но нельзя автоматически считать его доступным в GitHub Codespaces web editor на iPhone. Это отдельная Electron/desktop архитектура.
+- Для нашей cloud workstation с iPhone по-прежнему нужен браузерный automation сервис, который реально работает в headless Linux/Codespaces (например, Playwright MCP), либо проверка поддержки конкретной remote browser архитектуры. Встроенный VS Code browserView сам по себе не заменяет это.
+
+### Devcontainer из vscode fork
+- `.devcontainer/devcontainer.json` использует desktop-lite, Rust, sshd; `privileged: true`; `overrideCommand: false`; named volume `vscode-dev`; postCreate `./.devcontainer/post-create.sh`.
+- Автоматически forward ports 6080 (noVNC web client) и 5901 (VNC TCP), оба silent.
+- hostRequirements.memory = 9gb.
+- Это devcontainer для разработки/тестирования Code - OSS с desktop/VNC окружением, а не лёгкий профиль для нашего 2 CPU / 8 GB Codespace. Требует отдельной оценки ресурсов и защиты перед переносом.
+- Наличие sshd/VNC ports и `privileged: true` не означает, что среда сейчас запущена или безопасно опубликована.
+
+### MCP implementation внутри VS Code fork
+- В дереве присутствует substantial MCP support в Copilot extension: `extensions/copilot/src/extension/mcp`, `platform/mcp`, `githubMcp`.
+- Прочитанный `mcp/vscode-node/commands.ts` реализует assisted MCP package setup: валидация пакетов из npm/PyPI/NuGet/Docker Hub, получение README/manifest, генерация конфигурации через tool-calling loop и запрос consent перед записью. Поддерживает форматы VS Code/workspaceRoot/copilotGlobal.
+- Прочитанный `githubMcp/vscode-node/githubMcp.contribution.ts` регистрирует GitHub MCP Definition Provider через VS Code Language Model API, если экспериментальная настройка GitHub MCP включена. Это механизм самого VS Code/Copilot, не доказывает, что GitHub MCP включён в данном пользовательском Codespace.
+- Это исходный код платформы и Copilot extension. Наличие кода в fork не означает, что опубликованная сборка построена, установлена или запущена.
+
+## 11. Обновлённые выводы и следующие действия
+1. Явная MCP-конфигурация, которую мы реально нашли в пользовательских репозиториях, пока одна: `component-explorer` в `EleFanTer/vscode/.mcp.json`.
+2. Встроенный browserView в VS Code fork — отдельная нативная Electron browser/agent capability, не MCP server; она Desktop-only.
+3. MCP support в Copilot source code не равен подключённому MCP в Codex CLI.
+4. Следующий технический приоритет: изучить `img2threejs` skill и его Playwright capture pipeline; затем проверить все ветки/файлы конфигурации в остальных репозиториях и live Codex MCP config из самого Codespace.
