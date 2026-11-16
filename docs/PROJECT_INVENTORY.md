@@ -347,3 +347,18 @@ User supplied terminal screenshot from Codespace workspace /workspaces/remote-co
 - This is a live observation for the current Codespace terminal only. It does not prove Codex is absent from every environment or that the GitHub Codespaces secret does not exist in account/repository settings; it may be unassigned to this Codespace or named differently.
 - Earlier historical note that Codex CLI 0.169.0 had been installed/logged in is not confirmed in the current shell. Treat current shell observation as authoritative for this session until installation/PATH is diagnosed.
 - Next safe step: inspect node/npm versions, npm global prefix/bin path, PATH presence, and search only likely Codex executable locations without printing secrets. Then decide whether to install Codex CLI into this Codespace. Separately verify Codespaces secret configuration in GitHub settings, ensuring repository access is enabled; do not ask user to paste token values.
+
+
+## 22. Live Codespace runtime check: Node/npm and Codex package (2026-11-16)
+
+User supplied second terminal screenshot from the active Codespace:
+- Node.js v24.22.2; npm 11.19.1.
+- Global npm prefix: /usr/local/share/nvm/versions/node/v24.22.2.
+- Global npm root: /usr/local/share/nvm/versions/node/v24.22.2/lib/node_modules.
+- `npm ls -g @openai/codex --depth=0` returned an empty global dependency tree; package not installed globally.
+- `command -v codex` returned CODEX NOT IN PATH.
+- No codex binary found under the global npm prefix bin directory.
+- PATH includes Codespaces, Node v24.22.2 and VS Code remote CLI paths. The VS Code remote CLI and Copilot Chat extension are not Codex CLI.
+- Current live shell state supersedes historical note of Codex CLI 0.169.0 being installed/logged in: that prior installation is not present in this active Codespace environment.
+- Node 24 satisfies current Codex CLI Node runtime requirements as checked against package/docs context; npm 11 is present.
+- Next step: install @openai/codex globally in this Codespace, then verify codex --version and codex login status. Do not add MCP servers until Codex is installed and authenticated and current config is inventoried.
