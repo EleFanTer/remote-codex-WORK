@@ -433,3 +433,13 @@ User supplied screenshot of github.com/codespaces. The visible portion shows the
 - The only visible Codespace attached to `EleFanTer/remote-codex-workstation` is Crispy. The previously observed `super-duper-xylophone` may have been deleted, stopped, or outside the visible portion; account list must be inspected at top and bottom before concluding.
 - Several Codespaces belong to unrelated repositories. Do not treat their environments as the canonical remote-codex-workstation environment or alter/delete them.
 - Next step: request screenshots of the top and bottom of the Codespaces list (including all entries) to establish full inventory and find any additional Codespaces attached to the target repo.
+
+
+## 29. Crispy selected as canonical Codespace; main branch and Codex installed (2026-11-16)
+
+- User ran `git switch main` successfully in Codespace `crispy-space-bassoon-rxgpvq446gg3w79v`.
+- User ran `npm install -g @openai/codex`; terminal returned Codex CLI version `codex-cli 0.169.0`.
+- Shell prompt and VS Code status bar now show branch `main`.
+- This is the first confirmed current installation of Codex CLI in the selected Crispy Codespace. Earlier installation in `super-duper-xylophone` is historical and not relied upon.
+- Crispy is now the selected canonical Codespace for `remote-codex-workstation`, with a clean initial repository snapshot on main, pending further verification of login and MCP config.
+- Next: start device login from this same terminal using `codex login --device-auth`, complete authorization in browser, verify `codex login status` returns Logged in, then inspect `codex mcp list`. Do not configure MCP servers until login and current config are verified.
