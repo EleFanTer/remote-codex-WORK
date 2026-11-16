@@ -418,3 +418,18 @@ User supplied follow-up terminal screenshot from `crispy-space-bassoon-rxgpvq446
 - Therefore this clone is a clean, minimal initial-commit repository snapshot. It contains no application implementation, no project docs, no MCP config, and no unique FireCrawl branch work at the inspected depth. The branch name alone is not evidence of a Firecrawl integration.
 - This supports using the Crispy Codespace as a candidate clean baseline, but does not establish it is the only/most current Codespace. The other Codespace `super-duper-xylophone` previously had Codex v0.169.0 installed/launched; no repository divergence has yet been evidenced between them.
 - Recommendation: keep Crispy as a clean baseline and do not delete the other Codespace until account-level inventory or a direct comparison confirms it has no unique files/state. Since both appear to point at the same initial repo commit, choose one canonical environment after identifying the remaining Codespaces and then install/configure Codex only there.
+
+
+## 28. GitHub Codespaces account list: partial visual inventory (2026-11-16)
+
+User supplied screenshot of github.com/codespaces. The visible portion shows these Codespaces:
+1. Repository `EleFanTer/remote-codex-workstation`, Codespace `crispy space bassoon`, branch `FireCrawl`, 2-core / 8GB RAM / 32GB storage, Active.
+2. Repository `EleFanTer/Repacks`, Codespace `congenial telegram`, branch `HEAD`, 2-core / 8GB RAM / 32GB storage, last used about 16 hours ago.
+3. Repository `EleFanTer/congenial-invention`, Codespace `congenial invention`, branch `main`, 2-core / 8GB RAM / 32GB storage, last used 1 day ago.
+4. Repository `ioBroker/ioBroker`, Codespace `super eureka`, branch `HEAD*`, 2-core / 8GB RAM / 32GB storage, last used 1 day ago.
+5. Blank-template Codespace `cuddly funicular`, created from `github/codespaces-blank`, 2-core / 8GB RAM / 32GB storage, last used 1 day ago.
+6. Repository `butlerx/wetty`, Codespace `cautious chainsaw`, branch `main`; hardware/last-used details are obscured by browser toolbar in screenshot.
+- The screenshot is a partial scrolled view, not a complete list. Do not infer total Codespace count or conclude `super-duper-xylophone` is absent; it is not visible in this portion.
+- The only visible Codespace attached to `EleFanTer/remote-codex-workstation` is Crispy. The previously observed `super-duper-xylophone` may have been deleted, stopped, or outside the visible portion; account list must be inspected at top and bottom before concluding.
+- Several Codespaces belong to unrelated repositories. Do not treat their environments as the canonical remote-codex-workstation environment or alter/delete them.
+- Next step: request screenshots of the top and bottom of the Codespaces list (including all entries) to establish full inventory and find any additional Codespaces attached to the target repo.
