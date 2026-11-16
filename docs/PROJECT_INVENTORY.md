@@ -406,3 +406,15 @@ User supplied terminal screenshot from `crispy-space-bassoon-rxgpvq446gg3w79v`, 
 - `ls -la` output visibly shows `.git` and `LICENSE`; the screenshot is vertically clipped and does not conclusively show the entire directory listing, so do not conclude that no other project files exist without a fresh `find`/`ls` output.
 - This Codespace's repo clone appears clean and at the common initial commit. It is not evidence of additional FireCrawl implementation work.
 - Next safe action: inspect exact tracked file list and compare local commit/tree with GitHub main; then choose this as canonical only if user confirms or no other Codespace has unique work. No checkout, reset, deletion or installation yet.
+
+
+## 27. Crispy Codespace repository contents fully confirmed (2026-11-16)
+
+User supplied follow-up terminal screenshot from `crispy-space-bassoon-rxgpvq446gg3w79v`:
+- `git ls-files` lists exactly two tracked files: `LICENSE` and `README.md`.
+- `git diff --stat origin/main...HEAD` printed no diff summary: local HEAD has no difference from origin/main.
+- `git branch -avv` shows local `FireCrawl` at `444faa2`, tracking `origin/FireCrawl`; remote `origin/FireCrawl` at the same commit; `origin/main` at the same commit; `origin/HEAD -> origin/main`.
+- `find . -maxdepth 2 ...` lists only `./LICENSE` and `./README.md` outside `.git`.
+- Therefore this clone is a clean, minimal initial-commit repository snapshot. It contains no application implementation, no project docs, no MCP config, and no unique FireCrawl branch work at the inspected depth. The branch name alone is not evidence of a Firecrawl integration.
+- This supports using the Crispy Codespace as a candidate clean baseline, but does not establish it is the only/most current Codespace. The other Codespace `super-duper-xylophone` previously had Codex v0.169.0 installed/launched; no repository divergence has yet been evidenced between them.
+- Recommendation: keep Crispy as a clean baseline and do not delete the other Codespace until account-level inventory or a direct comparison confirms it has no unique files/state. Since both appear to point at the same initial repo commit, choose one canonical environment after identifying the remaining Codespaces and then install/configure Codex only there.
