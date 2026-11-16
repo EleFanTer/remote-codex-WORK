@@ -362,3 +362,12 @@ User supplied second terminal screenshot from the active Codespace:
 - Current live shell state supersedes historical note of Codex CLI 0.169.0 being installed/logged in: that prior installation is not present in this active Codespace environment.
 - Node 24 satisfies current Codex CLI Node runtime requirements as checked against package/docs context; npm 11 is present.
 - Next step: install @openai/codex globally in this Codespace, then verify codex --version and codex login status. Do not add MCP servers until Codex is installed and authenticated and current config is inventoried.
+
+
+## 23. Codex CLI reinstalled and device login initiated (2026-11-16)
+
+- User screenshot shows Codex CLI v0.169.0 launched successfully in the active Codespace.
+- `codex login --device-auth` started the OpenAI device authorization flow and displayed the official device URL. The CLI is waiting for the user to complete browser authorization.
+- This supersedes the prior check showing `codex: command not found`; Codex is now executable in the active terminal.
+- The one-time device code was visible in the user-provided screenshot. Do not store or repeat it in this inventory. User was advised to enter it only on the official OpenAI device page and not share it.
+- Login completion is not yet confirmed. Next diagnostic after browser approval: `codex login status`, then `codex mcp list` and inspect MCP config headers. Do not add MCP servers until current state is confirmed.
