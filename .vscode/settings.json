@@ -1,0 +1,17 @@
+{
+    "chat.agent.sandbox.enabled": "off",
+    "chat.agent.sandbox.network.allowLocalNetwork": true,
+    "chat.unifiedAgentsBar.enabled": true,
+    "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
+    "chat.tools.terminal.outputCompaction": true,
+    "chat.mcp.collisionBehavior": "suffix",
+    "chat.mcp.discovery.enabled": {
+        "claude-desktop": true,
+        "windsurf": true,
+        "cursor-global": true,
+        "cursor-workspace": true
+    },
+    "chat.mcp.gallery.enabled": true,
+    "chat.mcp.assisted.nuget.enabled": true,
+    "inlineChat.notebookAgent": true
+}
